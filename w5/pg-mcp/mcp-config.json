@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "pg-mcp": {
+      "command": "uvx",
+      "args": [
+        "--refresh",
+        "--from",
+        "C:/source/learning/my-geektime-bootcamp-ai/w5/pg-mcp",
+        "pg-mcp"
+      ],
+      "env": {
+        "CONFIG_PATH": "C:/source/learning/my-geektime-bootcamp-ai/w5/pg-mcp/config.test.yaml",
+        "DB_PASSWORD": "your_postgres_password",
+        "OPENAI_API_KEY": "your_openai_api_key"
+      }
+    }
+  }
+}

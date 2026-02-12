@@ -1,0 +1,121 @@
+# PostgreSQL MCP Server Configuration Example
+# 
+# This server supports both single-database and multi-database configurations.
+# Choose the format that fits your needs:
+
+# =============================================================================
+# OPTION 1: Single Database Configuration (Auto-converted to multi-database)
+# =============================================================================
+# 
+# database:
+#   host: localhost
+#   port: 5432
+#   database: myapp_db
+#   user: postgres
+#   password: ${DB_PASSWORD}  # From environment variable
+#   
+#   # Connection Pool Settings
+#   min_connections: 2
+#   max_connections: 10
+#   connection_timeout: 30
+
+# =============================================================================
+# OPTION 2: Multi-Database Configuration (Recommended)
+# =============================================================================
+
+# OpenAI Configuration
+# For standard OpenAI:
+openai:
+  api_key: ${OPENAI_API_KEY}  # From environment variable
+  model: gpt-4o-mini
+  api_base: null  # Optional: custom API endpoint
+  timeout: 30
+  max_retries: 3
+
+# For Azure OpenAI, add these settings:
+# openai:
+#   api_key: ${AZURE_OPENAI_API_KEY}
+#   model: gpt-4o-mini
+#   use_azure: true
+#   azure_endpoint: ${AZURE_OPENAI_ENDPOINT}  # e.g., https://your-resource.openai.azure.com/
+#   azure_deployment: ${AZURE_OPENAI_DEPLOYMENT}  # Your deployment name
+#   api_version: "2024-02-15-preview"
+#   timeout: 30
+#   max_retries: 3
+
+# Query Limits
+query_limits:
+  max_execution_time: 30  # seconds
+  max_rows: 10000
+  max_result_size_mb: 100
+
+# Schema Cache Configuration
+schema_cache:
+  load_on_startup: true
+  include_statistics: false
+
+# Rate Limiting Configuration
+rate_limit:
+  enabled: true
+  max_requests: 60  # Maximum requests per time window
+  time_window: 60   # Time window in seconds
+
+# Metrics and Observability Configuration
+metrics:
+  enabled: true
+  collect_query_metrics: true
+  collect_sql_metrics: true
+  collect_db_metrics: true
+
+# Logging Configuration
+logging:
+  level: INFO
+  file: logs/mcp-server.log
+  max_size_mb: 100
+  backup_count: 5
+
+# Server Configuration
+server:
+  name: postgresql-mcp-server
+  version: 1.1.0
+  default_database: myapp_db  # Default database to use if not specified
+
+# Database Configurations
+# You can define multiple databases and switch between them
+databases:
+  # Primary Application Database
+  - name: myapp_db
+    description: "Primary application database"
+    host: localhost
+    port: 5432
+    database: myapp_db
+    user: postgres
+    password: ${DB_PASSWORD}
+    
+    min_connections: 2
+    max_connections: 10
+    connection_timeout: 30
+    
+    # Optional: Access control policy
+    # access_policy:
+    #   blocked_tables:
+    #     - schema: public
+    #       table: sensitive_data
+    #   table_rules:
+    #     - schema: public
+    #       table: users
+    #       denied_columns: [password_hash, ssn]
+    #       row_filter: "status = 'active'"
+
+  # Analytics/Reporting Database (Optional)
+  # - name: analytics_db
+  #   description: "Analytics and reporting database"
+  #   host: localhost
+  #   port: 5432
+  #   database: analytics_db
+  #   user: readonly_user
+  #   password: ${ANALYTICS_DB_PASSWORD}
+  #   
+  #   min_connections: 1
+  #   max_connections: 5
+  #   connection_timeout: 30
