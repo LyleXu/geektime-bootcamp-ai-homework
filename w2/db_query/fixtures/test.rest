@@ -1,0 +1,251 @@
+###
+# Database Query Tool API Tests
+# Use VS Code REST Client extension to run these tests
+# Make sure the backend is running on http://localhost:8000
+###
+
+@baseUrl = http://localhost:8000
+@contentType = application/json
+
+###
+# Health Check
+GET {{baseUrl}}/health
+
+###
+# Root endpoint
+GET {{baseUrl}}/
+
+
+### ========================================
+### Database Connection Management
+### ========================================
+
+###
+# 1. List all databases (initially empty)
+GET {{baseUrl}}/api/v1/dbs
+
+###
+# 2. Add a test database connection (PostgreSQL from w1)
+# Note: Adjust the URL if your PostgreSQL is running elsewhere
+PUT {{baseUrl}}/api/v1/dbs/testdb
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://postgres:postgres@localhost:5432/postgres",
+  "isActive": true
+}
+
+###
+# 3. Add another database connection
+PUT {{baseUrl}}/api/v1/dbs/myapp
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://postgres:postgres@localhost:5432/myapp",
+  "isActive": true
+}
+
+###
+# 4. Update existing database connection
+PUT {{baseUrl}}/api/v1/dbs/testdb
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://postgres:postgres@localhost:5432/postgres",
+  "isActive": false
+}
+
+###
+# 5. List all databases (should show added connections)
+GET {{baseUrl}}/api/v1/dbs
+
+###
+# 6. Get schema metadata for a specific database
+GET {{baseUrl}}/api/v1/dbs/testdb
+
+###
+# 7. Get schema metadata for another database
+GET {{baseUrl}}/api/v1/dbs/myapp
+
+
+### ========================================
+### Query Execution
+### ========================================
+
+###
+# 8. Execute a simple SELECT query
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT current_database(), current_user, version()"
+}
+
+###
+# 9. Execute a query with LIMIT
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT tablename, schemaname FROM pg_tables WHERE schemaname = 'public' LIMIT 10"
+}
+
+###
+# 10. Query without LIMIT (should auto-add LIMIT 1000)
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM pg_tables WHERE schemaname = 'public'"
+}
+
+###
+# 11. Execute query on information_schema
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema = 'public' LIMIT 20"
+}
+
+###
+# 12. Test invalid SQL (should return error - contains INSERT)
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "INSERT INTO test VALUES (1, 'test')"
+}
+
+###
+# 13. Test invalid SQL (should return error - contains UPDATE)
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "UPDATE test SET value = 'new' WHERE id = 1"
+}
+
+###
+# 14. Test invalid SQL (should return error - contains DELETE)
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "DELETE FROM test WHERE id = 1"
+}
+
+###
+# 15. Test malformed SQL (should return syntax error)
+POST {{baseUrl}}/api/v1/dbs/testdb/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT * FROM WHERE"
+}
+
+
+### ========================================
+### Natural Language to SQL
+### ========================================
+
+###
+# 16. Generate SQL from natural language - list tables
+POST {{baseUrl}}/api/v1/dbs/testdb/query/natural
+Content-Type: {{contentType}}
+
+{
+  "naturalLanguage": "Show me all tables in the database"
+}
+
+###
+# 17. Generate SQL from natural language - count records
+POST {{baseUrl}}/api/v1/dbs/testdb/query/natural
+Content-Type: {{contentType}}
+
+{
+  "naturalLanguage": "Count how many tables are in the public schema"
+}
+
+###
+# 18. Generate SQL from natural language - get schema info
+POST {{baseUrl}}/api/v1/dbs/testdb/query/natural
+Content-Type: {{contentType}}
+
+{
+  "naturalLanguage": "List all columns in the pg_tables view"
+}
+
+###
+# 19. Generate SQL - Chinese prompt
+POST {{baseUrl}}/api/v1/dbs/testdb/query/natural
+Content-Type: {{contentType}}
+
+{
+  "naturalLanguage": "查询所有的数据库表名"
+}
+
+###
+# 20. Generate SQL - complex query
+POST {{baseUrl}}/api/v1/dbs/testdb/query/natural
+Content-Type: {{contentType}}
+
+{
+  "naturalLanguage": "Show me the table names, their row counts, and sizes from pg_stat_user_tables"
+}
+
+
+### ========================================
+### Error Cases
+### ========================================
+
+###
+# 21. Query non-existent database
+POST {{baseUrl}}/api/v1/dbs/nonexistent/query
+Content-Type: {{contentType}}
+
+{
+  "sql": "SELECT 1"
+}
+
+###
+# 22. Get schema for non-existent database
+GET {{baseUrl}}/api/v1/dbs/nonexistent
+
+###
+# 23. Natural language query on non-existent database
+POST {{baseUrl}}/api/v1/dbs/nonexistent/query/natural
+Content-Type: {{contentType}}
+
+{
+  "naturalLanguage": "Show all tables"
+}
+
+###
+# 24. Add database with invalid connection URL
+PUT {{baseUrl}}/api/v1/dbs/invalid
+Content-Type: {{contentType}}
+
+{
+  "url": "postgresql://invalid:invalid@localhost:9999/invalid",
+  "isActive": true
+}
+
+
+### ========================================
+### Database Deletion (Run these last!)
+### ========================================
+
+###
+# 25. Delete a database connection
+# Note: You need to get the ID from the list response first
+# Replace {id} with actual ID
+DELETE {{baseUrl}}/api/v1/dbs/1
+
+###
+# 26. Delete another database connection
+DELETE {{baseUrl}}/api/v1/dbs/2
+
+###
+# 27. Verify deletion - list should be empty or updated
+GET {{baseUrl}}/api/v1/dbs
